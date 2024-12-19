@@ -1,0 +1,13 @@
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\bin\Debug\net6.0\RPS.ConfigurationLoader.deps.json
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\bin\Debug\net6.0\RPS.ConfigurationLoader.dll
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\bin\Debug\net6.0\RPS.ConfigurationLoader.pdb
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\obj\Debug\net6.0\RPS.ConfigurationLoader.csproj.AssemblyReference.cache
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\obj\Debug\net6.0\RPS.ConfigurationLoader.GeneratedMSBuildEditorConfig.editorconfig
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\obj\Debug\net6.0\RPS.ConfigurationLoader.AssemblyInfoInputs.cache
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\obj\Debug\net6.0\RPS.ConfigurationLoader.AssemblyInfo.cs
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\obj\Debug\net6.0\RPS.ConfigurationLoader.csproj.CoreCompileInputs.cache
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\obj\Debug\net6.0\RPS.ConfigurationLoader.sourcelink.json
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\obj\Debug\net6.0\RPS.ConfigurationLoader.dll
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\obj\Debug\net6.0\refint\RPS.ConfigurationLoader.dll
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\obj\Debug\net6.0\RPS.ConfigurationLoader.pdb
+D:\Projects\RPS\RPS.Mifare.Service\RPS.ConfigurationLoader\obj\Debug\net6.0\ref\RPS.ConfigurationLoader.dll

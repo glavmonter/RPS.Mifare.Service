@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<nlog xmlns="http://www.nlog-project.org/schemas/NLog.xsd"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      autoreload="false">
+
+  <extensions>
+    <add assembly="NLog.Targets.Http" />
+  </extensions>
+   
+  <targets async="true">
+    <target name="console" xsi:type="ColoredConsole"
+            layout="${longdate} ${level:uppercase=true} (${logger}) ${message} ${exception:format=tostring}">
+    </target>
+
+    <target type="File"
+            name="logfile"
+            fileName="set_in_app"
+            
+            archiveFileName="set_in_app"
+            archiveEvery="Hour"
+            maxArchiveDays="7"
+            archiveOldFileOnStartup="True"
+            archiveNumbering="Date"
+            archiveDateFormat="yyyy-MM-dd-HH-mm">
+        
+        <layout>${longdate} ${level:uppercase=true} (${logger}) ${message} ${exception:format=tostring}</layout>
+    </target>
+
+    <target name="jsonFile" xsi:type="File" fileName="log-file.json" >
+      <layout xsi:type="JsonLayout" includeEventProperties="true">
+        <attribute name="logger" layout="${logger:shortName=false}"/>
+        <attribute name="time" layout="${longdate}" />
+        <attribute name="level" layout="${level:upperCase=true}"/>
+        <attribute name="message" layout="${message:raw=true}" />
+        <attribute name="message_full" layout="${message}"/>
+      </layout>
+    </target>
+
+    <target name="LogCollector"
+      type="HTTP"
+      URL="set_in_app"
+      Method="POST"
+      BatchSize="30"
+      MaxQueueSize="20000"
+      FlushBeforeShutdown="true"
+      ContentType="application/json"
+      Accept="application/json"
+      DefaultConnectionLimit="2"
+      Expect100Continue="false"
+      ConnectTimeout="30000"
+      BatchAsJsonArray="true">
+        <layout xsi:type="JsonLayout" includeEventProperties="true">
+          <attribute name="logger" layout="${logger:shortName=false}"/>
+          <attribute name="machine" layout="${machinename}"/>
+          <attribute name="time" layout="${longdate}" />
+          <attribute name="level" layout="${level:upperCase=true}"/>
+          <attribute name="message_template" layout="${message:raw=true}" />
+          <attribute name="message_full" layout="${message}"/>
+        </layout>
+    </target>
+  </targets>
+
+  <rules>      
+    <!--Правила фильтрации генерируются в коде на основе appsettings.json:Logging:LogLevel-->
+    <logger name="*" rulename="all" minlevel="Trace" writeTo="console,logfile" /> <!-- Включение вывода в LogCollector из кода -->
+  </rules>
+</nlog>
