@@ -58,10 +58,12 @@
           <attribute name="message_full" layout="${message}"/>
         </layout>
     </target>
+
+    <target xsi:type="OutputDebugString" name="debug" layout="Layout" />
   </targets>
 
   <rules>      
     <!--Правила фильтрации генерируются в коде на основе appsettings.json:Logging:LogLevel-->
-    <logger name="*" rulename="all" minlevel="Trace" writeTo="console,logfile" /> <!-- Включение вывода в LogCollector из кода -->
+    <logger name="*" rulename="all" minlevel="Trace" writeTo="console,logfile,debug" /> <!-- Включение вывода в LogCollector из кода -->
   </rules>
 </nlog>

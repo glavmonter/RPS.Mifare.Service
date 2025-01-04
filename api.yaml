@@ -6,6 +6,12 @@ servers:
   - url: http://localhost:3333/
 
 paths:
+  /Settings:
+    post:
+      summary: Установить настройки
+      parameters:
+        - name: SerialPortName
+        
   /WriteData:
     post:
       summary: Записать данные на карту
@@ -109,6 +115,12 @@ paths:
             type: string
             pattern: ^[0-9a-fA-F]{2,8}$
             example: AB4569
+        - name: callback
+          in: query
+          required: false
+          schema:
+            type: string
+
       responses:
         '200':
           description: OK
@@ -169,23 +181,76 @@ paths:
                     example: '2015-10-02 15:16:37'
                   CurrentStatus:
                     $ref: '#/components/schemas/CurrentStatus'
+                    description: NotUsed
                   CardId:
                     description: Номер карты в Hex представление
                     type: string
                     pattern: ^[0-9a-fA-F]{2,8}$
                     example: 12ABCD59
-                  card:
-                    nullable: true
-                    allOf:
-                      - $ref: '#/components/schemas/Card'
+                  ParkingEnterTime:
+                    description: Время въезда на парковку
+                    type: string
+                    format: date-time
+                    example: '2015-10-02 15:16:37'
+                  LastRecountTime:
+                    description: Время пересчёта
+                    type: string
+                    format: date-time
+                    example: '2015-10-02 15:16:37'
+                  SumOnCard:
+                    description: Сумма денег на карте
+                    type: integer
+                    example: 54
+                  TSidFC:
+                    description: Тарифная сетка
+                    type: integer
+                    example: 8
+                  TPidFC:
+                    description: Тарифный план
+                    type: integer
+                    example: 9
+                  ZoneidFC:
+                    description: Парковочная зона
+                    type: integer
+                    example: 2
+                  ClientGroupidFC:
+                    description: Группа доступа
+                    type: integer
+                    example: 1
+                  LastPaymentTime:
+                    description: Время последней оплаты
+                    type: string
+                    format: date-time
+                    example: '2015-10-02 15:16:37'
+                  Nulltime1:
+                    type: string
+                    format: date-time
+                    example: '2000-01-01 00:00:00'
+                  Nulltime2:
+                    type: string
+                    format: date-time
+                    example: '2000-01-01 00:00:00'
+                  Nulltime3:
+                    type: string
+                    format: date-time
+                    example: '2000-01-01 00:00:00'
+                  TVP:
+                    type: string
+                    format: date-time
+                    example: '2000-01-01 00:00:00'
+                  TKVP:
+                    type: integer
+                    example: 0
+                  Regular:
+                    type: boolean
 components:
   schemas:
     Status:
       type: string
       enum:
-        - Succsess
-        - TemporaryError
-      example: Succsess
+        - CardReaded
+        - SomeoneElsesCard
+      example: CardReaded
 
     CurrentStatus:
       type: string
@@ -203,63 +268,3 @@ components:
         - CardWrited
         - WriteError
       example: CardReaded
-
-    Card:
-      type: object
-      properties:
-        ParkingEnterTime:
-          description: Время въезда на парковку
-          type: string
-          format: date-time
-          example: '2015-10-02 15:16:37'
-        LastRecountTime:
-          description: Время пересчёта
-          type: string
-          format: date-time
-          example: '2015-10-02 15:16:37'
-        SumOnCard:
-          description: Сумма денег на карте
-          type: integer
-          example: 54
-        TSidFC:
-          description: Тарифная сетка
-          type: integer
-          example: 8
-        TPidFC:
-          description: Тарифный план
-          type: integer
-          example: 9
-        ZoneidFC:
-          description: Парковочная зона
-          type: integer
-          example: 2
-        ClientGroupidFC:
-          description: Группа доступа
-          type: integer
-          example: 1
-        LastPaymentTime:
-          description: Время последней оплаты
-          type: string
-          format: date-time
-          example: '2015-10-02 15:16:37'
-        Nulltime1:
-          type: string
-          format: date-time
-          example: '2000-01-01 00:00:00'
-        Nulltime2:
-          type: string
-          format: date-time
-          example: '2000-01-01 00:00:00'
-        Nulltime3:
-          type: string
-          format: date-time
-          example: '2000-01-01 00:00:00'
-        TVP:
-          type: string
-          format: date-time
-          example: '2000-01-01 00:00:00'
-        TKVP:
-          type: integer
-          example: 0
-        Regular:
-          type: boolean
