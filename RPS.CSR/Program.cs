@@ -1,10 +1,12 @@
-﻿using System.Reflection;
-using System.Text.Json.Serialization;
+﻿using System.Collections.Concurrent;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting.WindowsServices;
 using NLog.Web;
 using RPS.ConfigurationLoader;
 using RPS.CSR;
+using RPS.Devices.Abstractions;
+using RPS.Devices.Mifare.Prox;
+using RPS.Devices.SerialConnection;
 
 string appName = Assembly.GetExecutingAssembly().GetName().Name!;
 
@@ -26,8 +28,20 @@ builder.Host.UseNLog();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSingleton<ISerialConnection, SerialConnection>();
+builder.Services.AddSingleton<IMifare>(sp => {
+    var c = sp.GetRequiredService<ISerialConnection>();
+    var mifare = new ProxSerial(c, sp.GetRequiredService<ILogger<ProxSerial>>()) {
+        DelayBetweenRead = TimeSpan.FromMilliseconds(10),
+        DelayBetweenWrite = TimeSpan.FromMilliseconds(10)
+    };
+    return mifare;
+});
+builder.Services.AddSingleton<ConcurrentQueue<object>>(sp => {
+    return new ConcurrentQueue<object>();
+});
 builder.Services.AddHostedService<Worker>();
-builder.Services.AddDbContext<ApplicationContext>(opts => {
+builder.Services.AddDbContext<ApplicationDbContext>(opts => {
     opts.UseSqlite("Data Source=RPS.CSR.db");
 });
 builder.Host.UseWindowsService();
@@ -35,11 +49,12 @@ builder.Host.UseWindowsService();
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope()) {
-    var db = scope.ServiceProvider.GetService<ApplicationContext>();
+    var db = scope.ServiceProvider.GetService<ApplicationDbContext>();
     db?.Database.EnsureCreated();
 }
 
-if (app.Environment.IsDevelopment()) {
+bool useSwagger = app.Configuration.GetValue<bool>("UseSwagger", false);
+if (app.Environment.IsDevelopment() || useSwagger) {
     app.UseSwagger();
     app.UseSwaggerUI();
 }

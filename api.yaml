@@ -6,12 +6,7 @@ servers:
   - url: http://localhost:3333/
 
 paths:
-  /Settings:
-    post:
-      summary: Установить настройки
-      parameters:
-        - name: SerialPortName
-        
+
   /WriteData:
     post:
       summary: Записать данные на карту

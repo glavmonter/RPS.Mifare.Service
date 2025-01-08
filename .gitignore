@@ -404,3 +404,6 @@ src/published/
 RPS.Devices.Mifare/Utils/build*
 .venv
 HardwareDocs/05. Mifare/*
+
+*.db
+*.db-*

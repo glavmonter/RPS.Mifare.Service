@@ -1,21 +1,32 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Collections.Concurrent;
+using Microsoft.AspNetCore.Mvc;
+using RPS.Devices.SerialConnection;
 
 namespace RPS.CSR.Controllers {
 
     public class SerialPortConfig {
         public string SerialPortName { get; set; } = String.Empty;
+
         public int SerialPortSpeed { get; set; }
+    }
+
+    public class AvailablePort {
+        public string Name { get; set; } = String.Empty;
+
+        public bool Available { get; set; } = false;
     }
 
     [ApiController]
     [Route("/[controller]")]
     public class SerialSettingsController : ControllerBase {
         private readonly ILogger<SerialSettingsController> logger;
-        private readonly ApplicationContext db;
+        private readonly ApplicationDbContext db;
+        private readonly ConcurrentQueue<object> requestQueue;
 
-        public SerialSettingsController(ApplicationContext db, ILogger<SerialSettingsController> logger) {
+        public SerialSettingsController(ApplicationDbContext db, ConcurrentQueue<object> requestQueue, ILogger<SerialSettingsController> logger) {
             this.logger = logger;
             this.db = db;
+            this.requestQueue = requestQueue;
         }
 
         [HttpGet("GetSerialSettings")]
@@ -29,8 +40,8 @@ namespace RPS.CSR.Controllers {
             }
 
             return Ok(new {
-                SerialPortName = s.SerialPortName,
-                SerialPortSpeed = s.SerialPortSpeed,
+                s.SerialPortName,
+                s.SerialPortSpeed,
             });
         }
 
@@ -57,11 +68,23 @@ namespace RPS.CSR.Controllers {
             }
 
             this.db.SaveChanges();
+            this.requestQueue.Enqueue(Messages.UpdateConfig);
 
             return Ok(new {
                 Status = "Success",
                 Message = "Configured successfully"
             });
+        }
+
+        [HttpGet("AvailablePorts")]
+        public IActionResult GetAvailablePorts() {
+            var names = Utils.SerialPorts;
+            IList<AvailablePort> ports = new List<AvailablePort>();
+            foreach (var p in names) {
+                ports.Add(new AvailablePort { Name = p, Available = SerialConnection.CheckPortExists(p) });
+            }
+
+            return Ok(ports);
         }
     }
 }
