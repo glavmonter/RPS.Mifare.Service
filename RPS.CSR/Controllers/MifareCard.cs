@@ -17,6 +17,14 @@ namespace RPS.CSR.Controllers {
             this.mifare = mifare;
         }
 
+        [HttpGet("GetVersion")]
+        [HttpOptions("GetVersion")]
+        public IActionResult GetVersion([FromQuery] string? callback = null) {
+            return Ok(new {
+                Status = "OK"
+            });
+        }
+
         [HttpGet("GetData")]
         public async Task<IActionResult> GetData(
             [FromQuery] int sector,

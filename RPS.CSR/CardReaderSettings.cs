@@ -13,12 +13,12 @@
             if (s != null) {
                 SerialPortName = s.SerialPortName;
                 SerialPortSpeed = s.SerialPortSpeed;
-                return true;
             } else {
-                SerialPortName = "";
-                SerialPortSpeed = 0;
-                return false;
+                SerialPortName = "invalid";
+                SerialPortSpeed = 9600;
             }
+
+            return true;
         }
 
         public void Save(IServiceProvider sp) {

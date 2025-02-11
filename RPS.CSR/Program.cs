@@ -17,7 +17,7 @@ var options = new WebApplicationOptions {
 
 var builder = WebApplication.CreateBuilder(options);
 var logCollector = LogCollector.FromConfiguration(builder.Configuration.GetSection("LogCollector"));
-NLogConfigurator.ConfigureTargets("nlog.xml", appName, logCollector.Port);
+NLogConfigurator.ConfigureTargets(Path.Combine(AppContext.BaseDirectory, "nlog.xml"), appName, logCollector.Port);
 NLogConfigurator.ConfigureRules(builder.Configuration.GetSection("Logging"));
 if (logCollector.Enable) {
     NLogConfigurator.EnableLogCollectorTarget();
@@ -42,7 +42,8 @@ builder.Services.AddSingleton<ConcurrentQueue<object>>(sp => {
 });
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddDbContext<ApplicationDbContext>(opts => {
-    opts.UseSqlite("Data Source=RPS.CSR.db");
+    var data_source = Path.Combine(AppContext.BaseDirectory, "RPS.CSR.db");
+    opts.UseSqlite($"Data Source={data_source}");
 });
 builder.Host.UseWindowsService();
 

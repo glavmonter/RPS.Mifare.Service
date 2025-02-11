@@ -1,4 +1,5 @@
-﻿using System.IO.Ports;
+﻿using System;
+using System.IO.Ports;
 
 namespace RPS.CSR {
     public enum Messages {
@@ -14,9 +15,19 @@ namespace RPS.CSR {
             }
         }
 
+        /// <summary>
+        /// Преобразование строки ключа их хекса
+        /// </summary>
+        /// <param name="key">Ключ из 6 хекс знаков. Напрмер ABCD126957AD или AB:CD:12:69:57:AD</param>
+        /// <returns>Ключ или пустой массив, если не смог сконвертировать</returns>
         public static byte[] MifareKeyRepr(string key) {
-            var splitted = key.Split(':');
-            if (splitted.Length != 6) {
+            key = key.Replace(":", "");
+            if (key.Length != 12) {
+                return [];
+            }
+
+            var splitted = key.SplitEveryN(2);
+            if (splitted.Count != 6) {
                 return [];
             }
 
@@ -34,6 +45,23 @@ namespace RPS.CSR {
 
         public static bool SectorValid(int sector) {
             return sector >= 1 && sector <= 15;
+        }
+
+
+    }
+
+    public static class StringExtensions {
+        public static List<string> SplitEveryN(this string str, int n = 1024) {
+            List<string> ret = new List<string>();
+
+            int chunkIterator = 0;
+            while (chunkIterator < str.Length) {
+                int currentChunkSize = Math.Min(n, str.Length - chunkIterator);
+                ret.Add(str.Substring(chunkIterator, currentChunkSize));
+                chunkIterator += currentChunkSize;
+            }
+
+            return ret;
         }
     }
 }

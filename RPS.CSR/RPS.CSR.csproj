@@ -7,6 +7,14 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <PublishSingleFile Condition="'$(Configuration)' == 'Release'">false</PublishSingleFile>
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <Version>1.2</Version>
+    <PackageReleaseNotes>
+      Version 1.2
+        - Add OPTIONS /GetVersion endpoint
+        - Set default Serial port name to "invalid"
+      Version 1.1
+        - Add GET /GetVersion endpoint
+    </PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
