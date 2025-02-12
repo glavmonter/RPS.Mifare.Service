@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Mvc;
 using RPS.Devices.SerialConnection;
+using System.Net;
 
 namespace RPS.CSR.Controllers {
 
@@ -30,28 +31,28 @@ namespace RPS.CSR.Controllers {
         }
 
         [HttpGet("GetSerialSettings")]
-        public IActionResult GetSerialSettings() {
+        public IActionResult GetSerialSettings([FromQuery] string? callback = null) {
             var s = this.db.Settings.OrderBy(r => r.Id).FirstOrDefault();
             if (s == null) {
-                return NotFound(new {
+                return this.ToJsonp(new {
                     Status = "Error",
                     ErrorMessage = "No serial setting found"
-                });
+                }, callback, HttpStatusCode.OK);
             }
 
-            return Ok(new {
+            return this.ToJsonp(new {
                 s.SerialPortName,
                 s.SerialPortSpeed,
-            });
+            }, callback);
         }
 
         [HttpPost("SetSerialSettings")]
-        public IActionResult SetSerialSettings([FromBody] SerialPortConfig config) {
+        public IActionResult SetSerialSettings([FromBody] SerialPortConfig config, [FromQuery] string? callback = null) {
             if (string.IsNullOrEmpty(config.SerialPortName)) {
-                return BadRequest(new {
+                return this.ToJsonp(new {
                     Status = "Error",
                     ErrorMessage = "Invalid argument"
-                });
+                }, callback, HttpStatusCode.BadRequest);
             }
 
             var s = this.db.Settings.OrderBy(r => r.Id).FirstOrDefault();
@@ -70,21 +71,21 @@ namespace RPS.CSR.Controllers {
             this.db.SaveChanges();
             this.requestQueue.Enqueue(Messages.UpdateConfig);
 
-            return Ok(new {
+            return this.ToJsonp(new {
                 Status = "Success",
                 Message = "Configured successfully"
-            });
+            }, callback);
         }
 
         [HttpGet("AvailablePorts")]
-        public IActionResult GetAvailablePorts() {
+        public IActionResult GetAvailablePorts([FromQuery] string? callback = null) {
             var names = Utils.SerialPorts;
             IList<AvailablePort> ports = new List<AvailablePort>();
             foreach (var p in names) {
                 ports.Add(new AvailablePort { Name = p, Available = SerialConnection.CheckPortExists(p) });
             }
 
-            return Ok(ports);
+            return this.ToJsonp(ports, callback);
         }
     }
 }

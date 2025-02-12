@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using RPS.CSR.CardManagement;
 using RPS.Devices;
 using RPS.Devices.Abstractions;
 using RPS.Devices.Mifare;
+using System.Net;
 
 namespace RPS.CSR.Controllers {
     [ApiController]
@@ -20,9 +22,9 @@ namespace RPS.CSR.Controllers {
         [HttpGet("GetVersion")]
         [HttpOptions("GetVersion")]
         public IActionResult GetVersion([FromQuery] string? callback = null) {
-            return Ok(new {
-                Status = "OK"
-            });
+            return this.ToJsonp(new {
+                Status="Ok"
+            }, callback);
         }
 
         [HttpGet("GetData")]
@@ -32,34 +34,33 @@ namespace RPS.CSR.Controllers {
             [FromQuery] string? callback = null) {
             var key = Utils.MifareKeyRepr(cardKey);
             if (key.Length == 0 || !Utils.SectorValid(sector)) {
-                return BadRequest(new {
+                return this.ToJsonp(new {
                     Status = "ArgumentError",
                     Messages = "Sector or cardKey is invalid"
-                });
+                }, callback, HttpStatusCode.BadRequest);
             }
 
             if (this.mifare.DeviceStatus != DeviceConnectionStatus.Connected) {
-                return Ok(new {
+                return this.ToJsonp(new {
                     Status = "NotConnected",
                     Message = "Device Not connected or invalid"
-                });
+                }, callback);
             }
 
             var nuid = await this.mifare.GetCardAsync();
             if (nuid == null || nuid.Length == 0) {
                 this.logger.LogInformation("Card not found");
-                return Ok(new {
+                return this.ToJsonp(new {
                     Status = "SomeoneElsesCard",
                     Message = "No card found"
-                });
+                }, callback);
             }
 
             this.logger.LogDebug("Found card with nuid: {nuid}", BitConverter.ToString(nuid));
             var ret = await this.mifare.ReadSectorAsync(nuid, sector, key, null);
             if (ret.Status == ReadStatus.Ok) {
                 var card = PhysicalCard.FromMifare(nuid, ret.Data);
-
-                return Ok(new {
+                return this.ToJsonp(new {
                     Status = "CardReaded",
                     CurrentStatus = "NotUsed",
                     Message = "Card readed successfully",
@@ -79,13 +80,13 @@ namespace RPS.CSR.Controllers {
                     TVP = card.TVP.ToString(this.dtFormat),
                     TKVP = card.TKVP,
                     Regular = false
-                });
+                }, callback);
             } else {
                 this.logger.LogWarning("Cannot read card: {st}", ret.Status);
-                return Ok(new {
+                return this.ToJsonp(new {
                     Status = "SomeoneElsesCard",
                     Message = $"Cannot read card: {ret.Status}"
-                });
+                }, callback);
             }
         }
 
@@ -113,35 +114,35 @@ namespace RPS.CSR.Controllers {
 
             var key = Utils.MifareKeyRepr(cardKey);
             if (key.Length == 0 || !Utils.SectorValid(sector)) {
-                return BadRequest(new {
+                return this.ToJsonp(new {
                     Status = "ArgumentError",
                     Messages = "Sector or cardKey is invalid"
-                });
+                }, callback, HttpStatusCode.BadRequest);
             }
 
             if (this.mifare.DeviceStatus != DeviceConnectionStatus.Connected) {
-                return Ok(new {
+                return this.ToJsonp(new {
                     Status = "NotConnected",
                     Message = "Device Not connected or invalid"
-                });
+                }, callback);
             }
 
             var nuid = await this.mifare.GetCardAsync();
             if (nuid == null || nuid.Length == 0) {
                 this.logger.LogInformation("Card not found");
-                return Ok(new {
+                return this.ToJsonp(new {
                     Status = "SomeoneElsesCard",
                     Message = "No card found"
-                });
+                }, callback);
             }
 
             var s_nuid = BitConverter.ToString(nuid).Replace("-", "").ToUpper();
             if (!string.Equals(cardId, s_nuid, StringComparison.InvariantCultureIgnoreCase)) {
                 this.logger.LogInformation("Card id mismatch");
-                return Ok(new {
+                return this.ToJsonp(new {
                     Status = "SomeoneElsesCard",
                     Message = $"Card id mismatch: Required `{cardId}`, found `{s_nuid}`"
-                });
+                }, callback);
             }
 
             var card = new PhysicalCard() {
@@ -165,17 +166,17 @@ namespace RPS.CSR.Controllers {
             var wr_data = card.ToMifare();
             var st = await this.mifare.WriteSectorAsync(nuid, sector, key, null, wr_data);
             if (st == WriteStatus.Ok) {
-                return Ok(new {
+                return this.ToJsonp(new {
                     Status = "CardWrited",
                     Now = DateTime.Now.ToString(this.dtFormat),
                     Messages = "Card writed succesfully"
-                });
+                }, callback);
             } else {
                 this.logger.LogWarning("Cannot write card: {st}", st);
-                return Ok(new {
+                return this.ToJsonp(new {
                     Status = "SomeoneElsesCard",
                     Message = $"Cannot write card: {st}"
-                });
+                }, callback);
             }
         }
     }
