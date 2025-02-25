@@ -6,5 +6,7 @@ namespace RPS.CSR {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Settings> Settings => Set<Settings>();
+
+        public DbSet<KeySettings> KeySettings => Set<KeySettings>();
     }
 }

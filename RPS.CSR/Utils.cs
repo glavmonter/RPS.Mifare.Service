@@ -20,7 +20,11 @@ namespace RPS.CSR {
         /// </summary>
         /// <param name="key">Ключ из 6 хекс знаков. Напрмер ABCD126957AD или AB:CD:12:69:57:AD</param>
         /// <returns>Ключ или пустой массив, если не смог сконвертировать</returns>
-        public static byte[] MifareKeyRepr(string key) {
+        public static byte[] MifareKeyRepr(string? key) {
+            if (key == null) {
+                return [];
+            }
+
             key = key.Replace(":", "");
             if (key.Length != 12) {
                 return [];

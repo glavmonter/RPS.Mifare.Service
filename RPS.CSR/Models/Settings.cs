@@ -5,5 +5,11 @@
         public string? SerialPortName { get; set; }
 
         public int SerialPortSpeed { get; set; }
+
+    }
+
+    public class KeySettings {
+        public int Id { get; set; }
+        public byte[] Key { get; set; } = Array.Empty<byte>();
     }
 }

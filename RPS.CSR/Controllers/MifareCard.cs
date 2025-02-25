@@ -1,10 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
+﻿using System.Net;
+using Microsoft.AspNetCore.Mvc;
 using RPS.CSR.CardManagement;
 using RPS.Devices;
 using RPS.Devices.Abstractions;
 using RPS.Devices.Mifare;
-using System.Net;
 
 namespace RPS.CSR.Controllers {
     [ApiController]
@@ -12,11 +11,13 @@ namespace RPS.CSR.Controllers {
     public class MifareCard : ControllerBase {
         private readonly ILogger<MifareCard> logger;
         private readonly IMifare mifare;
+        private readonly ApplicationDbContext db;
         private readonly string dtFormat = "yyyy-MM-dd HH:mm:ss";
 
-        public MifareCard(IMifare mifare, ILogger<MifareCard> logger) {
+        public MifareCard(ApplicationDbContext db, IMifare mifare, ILogger<MifareCard> logger) {
             this.logger = logger;
             this.mifare = mifare;
+            this.db = db;
         }
 
         [HttpGet("GetVersion")]
@@ -27,12 +28,39 @@ namespace RPS.CSR.Controllers {
             }, callback);
         }
 
+        [HttpGet("SetKey")]
+        [HttpOptions("SetKey")]
+        public IActionResult SetKey([FromQuery(Name = "key")] string cardKey, [FromQuery] string? callback = null) {
+            var key = Utils.MifareKeyRepr(cardKey);
+            if (cardKey.Length == 0) {
+                return this.ToJsonp(new {
+                    Status = "ArgumentError",
+                    Message = "key is invalid or invalid format"
+                }, callback, HttpStatusCode.BadRequest);
+            }
+
+            var k = this.db.KeySettings.OrderBy(r => r.Id).FirstOrDefault();
+            if (k == null) {
+                k = new Models.KeySettings { Key = key };
+                this.db.Add(k);
+            } else {
+                k.Key = key;
+            }
+
+            this.db.SaveChanges();
+
+            return this.ToJsonp(new {
+                Status = "Ok"
+            }, callback);
+        }
+
         [HttpGet("GetData")]
         public async Task<IActionResult> GetData(
             [FromQuery] int sector,
-            [FromQuery] string cardKey,
+            [FromQuery] string? cardKey,
             [FromQuery] string? callback = null) {
-            var key = Utils.MifareKeyRepr(cardKey);
+
+            var key = SelectKey(cardKey);
             if (key.Length == 0 || !Utils.SectorValid(sector)) {
                 return this.ToJsonp(new {
                     Status = "ArgumentError",
@@ -109,10 +137,10 @@ namespace RPS.CSR.Controllers {
             [FromQuery] string cardId,
             [FromQuery] DateTime? dateSaveCard,
             [FromQuery] int sector,
-            [FromQuery] string cardKey,
+            [FromQuery] string? cardKey,
             [FromQuery] string? callback = null) {
 
-            var key = Utils.MifareKeyRepr(cardKey);
+            var key = SelectKey(cardKey);
             if (key.Length == 0 || !Utils.SectorValid(sector)) {
                 return this.ToJsonp(new {
                     Status = "ArgumentError",
@@ -178,6 +206,20 @@ namespace RPS.CSR.Controllers {
                     Message = $"Cannot write card: {st}"
                 }, callback);
             }
+        }
+
+        private byte[] SelectKey(string? queryKey) {
+            var key_query = Utils.MifareKeyRepr(queryKey);
+            if (key_query.Length != 0) {
+                return key_query;
+            }
+
+            var key_db = this.db.KeySettings.OrderBy(r => r.Id).FirstOrDefault();
+            if (key_db == null) {
+                return [];
+            }
+
+            return key_db.Key;
         }
     }
 }
