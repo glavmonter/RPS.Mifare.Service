@@ -50,11 +50,15 @@ namespace RPS.CSR.Controllers {
             this.db.SaveChanges();
 
             return this.ToJsonp(new {
-                Status = "Ok"
+                Status = "Succsess",
+                Now = DateTime.Now.ToString(this.dtFormat),
+                CurrentStatus = "CardExists",
+                IsAuthenticated = true,
             }, callback);
         }
 
         [HttpGet("GetData")]
+        [HttpOptions("GetData")]
         public async Task<IActionResult> GetData(
             [FromQuery] int sector,
             [FromQuery] string? cardKey,
@@ -118,7 +122,9 @@ namespace RPS.CSR.Controllers {
             }
         }
 
+        [HttpGet("WriteData")]
         [HttpPost("WriteData")]
+        [HttpOptions("WriteData")]
         public async Task<IActionResult> WriteData(
             [FromQuery] DateTime parkingEnterTime,
             [FromQuery] DateTime lastRecountTime,
