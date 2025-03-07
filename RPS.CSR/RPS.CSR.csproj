@@ -7,8 +7,10 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <PublishSingleFile Condition="'$(Configuration)' == 'Release'">false</PublishSingleFile>
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
-    <Version>1.5</Version>
+    <Version>1.6</Version>
     <PackageReleaseNotes>
+      Version 1.6
+        - Add [POST, OPTIONS] SetSectorNumber endpoint
       Version 1.5
         - Add [OPTIONS] for GetData, WriteData endpoints
         - Change reply for SetKey endpoint

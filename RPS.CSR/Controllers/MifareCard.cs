@@ -32,16 +32,16 @@ namespace RPS.CSR.Controllers {
         [HttpOptions("SetKey")]
         public IActionResult SetKey([FromQuery(Name = "key")] string cardKey, [FromQuery] string? callback = null) {
             var key = Utils.MifareKeyRepr(cardKey);
-            if (cardKey.Length == 0) {
+            if (key.Length == 0) {
                 return this.ToJsonp(new {
                     Status = "ArgumentError",
                     Message = "key is invalid or invalid format"
                 }, callback, HttpStatusCode.BadRequest);
             }
 
-            var k = this.db.KeySettings.OrderBy(r => r.Id).FirstOrDefault();
+            var k = this.db.MifareSettings.OrderBy(r => r.Id).FirstOrDefault();
             if (k == null) {
-                k = new Models.KeySettings { Key = key };
+                k = new Models.MifareSettings { Key = key, SectorNumber = -1 };
                 this.db.Add(k);
             } else {
                 k.Key = key;
@@ -57,14 +57,47 @@ namespace RPS.CSR.Controllers {
             }, callback);
         }
 
+        [HttpGet("SetSectorNumber")]
+        [HttpOptions("SetSectorNumber")]
+        public IActionResult SetSectorNumber([FromQuery(Name = "SectorNumber")] int sectorNumber, [FromQuery] string? callback = null) {
+
+            if (!Utils.SectorValid(sectorNumber)) {
+                return this.ToJsonp(new {
+                    Status = "Failed",
+                    Now = DateTime.Now.ToString(this.dtFormat),
+                    CurrentStatus = "Номер сектора не правильный"
+                }, callback, HttpStatusCode.BadRequest);
+            }
+
+            var k = this.db.MifareSettings.OrderBy(r => r.Id).FirstOrDefault();
+            if (k == null) {
+                k = new Models.MifareSettings { Key = [], SectorNumber = sectorNumber };
+                this.db.Add(k);
+            } else {
+                k.SectorNumber = sectorNumber;
+            }
+
+            this.db.SaveChanges();
+
+            return this.ToJsonp(new {
+                Result = new {
+                    Status = "Success",
+                    Now = DateTime.Now.ToString(this.dtFormat),
+                    CurrentStatus = "Операция выполнена успешно!"
+                }
+            }, callback);
+        }
+
         [HttpGet("GetData")]
         [HttpOptions("GetData")]
         public async Task<IActionResult> GetData(
-            [FromQuery] int sector,
+            [FromQuery(Name = "sector")] int? querySector,
             [FromQuery] string? cardKey,
             [FromQuery] string? callback = null) {
 
             var key = SelectKey(cardKey);
+            var sector = SelectSectorNumber(querySector);
+
             if (key.Length == 0 || !Utils.SectorValid(sector)) {
                 return this.ToJsonp(new {
                     Status = "ArgumentError",
@@ -142,11 +175,12 @@ namespace RPS.CSR.Controllers {
             [FromQuery] int tKVP,
             [FromQuery] string cardId,
             [FromQuery] DateTime? dateSaveCard,
-            [FromQuery] int sector,
+            [FromQuery(Name = "sector")] int? querySector,
             [FromQuery] string? cardKey,
             [FromQuery] string? callback = null) {
 
             var key = SelectKey(cardKey);
+            var sector = SelectSectorNumber(querySector);
             if (key.Length == 0 || !Utils.SectorValid(sector)) {
                 return this.ToJsonp(new {
                     Status = "ArgumentError",
@@ -220,12 +254,25 @@ namespace RPS.CSR.Controllers {
                 return key_query;
             }
 
-            var key_db = this.db.KeySettings.OrderBy(r => r.Id).FirstOrDefault();
+            var key_db = this.db.MifareSettings.OrderBy(r => r.Id).FirstOrDefault();
             if (key_db == null) {
                 return [];
             }
 
             return key_db.Key;
+        }
+
+        private int SelectSectorNumber(int? querySectorNumber) {
+            if (querySectorNumber != null) {
+                return (int)querySectorNumber;
+            }
+
+            var key_db = this.db.MifareSettings.OrderBy(r => r.Id).FirstOrDefault();
+            if (key_db == null) {
+                return -1;
+            }
+
+            return key_db.SectorNumber;
         }
     }
 }

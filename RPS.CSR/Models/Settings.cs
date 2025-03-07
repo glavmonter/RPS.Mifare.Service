@@ -8,8 +8,11 @@
 
     }
 
-    public class KeySettings {
+    public class MifareSettings {
         public int Id { get; set; }
+
         public byte[] Key { get; set; } = Array.Empty<byte>();
+
+        public int SectorNumber { get; set; }
     }
 }

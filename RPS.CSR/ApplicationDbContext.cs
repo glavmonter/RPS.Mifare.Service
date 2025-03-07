@@ -7,6 +7,6 @@ namespace RPS.CSR {
 
         public DbSet<Settings> Settings => Set<Settings>();
 
-        public DbSet<KeySettings> KeySettings => Set<KeySettings>();
+        public DbSet<MifareSettings> MifareSettings => Set<MifareSettings>();
     }
 }

@@ -50,8 +50,6 @@ namespace RPS.CSR {
         public static bool SectorValid(int sector) {
             return sector >= 1 && sector <= 15;
         }
-
-
     }
 
     public static class StringExtensions {
