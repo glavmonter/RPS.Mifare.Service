@@ -20,11 +20,14 @@ namespace RPS.CSR.Controllers {
             this.db = db;
         }
 
+        private string DateTimeNow => DateTime.Now.ToString(this.dtFormat);
+
         [HttpGet("GetVersion")]
         [HttpOptions("GetVersion")]
         public IActionResult GetVersion([FromQuery] string? callback = null) {
             return this.ToJsonp(new {
-                Status="Ok"
+                Status = WebAnswerT.Ok,
+                Now = DateTimeNow,
             }, callback);
         }
 
@@ -34,8 +37,9 @@ namespace RPS.CSR.Controllers {
             var key = Utils.MifareKeyRepr(cardKey);
             if (key.Length == 0) {
                 return this.ToJsonp(new {
-                    Status = "ArgumentError",
-                    Message = "key is invalid or invalid format"
+                    Status = WebAnswerT.TemporaryError,
+                    CurrentStatus = "key is invalid or invalid format",
+                    Now = DateTimeNow,
                 }, callback, HttpStatusCode.BadRequest);
             }
 
@@ -50,9 +54,9 @@ namespace RPS.CSR.Controllers {
             this.db.SaveChanges();
 
             return this.ToJsonp(new {
-                Status = "Succsess",
-                Now = DateTime.Now.ToString(this.dtFormat),
+                Status = WebAnswerT.Succsess,
                 CurrentStatus = "CardExists",
+                Now = DateTimeNow,
                 IsAuthenticated = true,
             }, callback);
         }
@@ -63,9 +67,9 @@ namespace RPS.CSR.Controllers {
 
             if (!Utils.SectorValid(sectorNumber)) {
                 return this.ToJsonp(new {
-                    Status = "Failed",
-                    Now = DateTime.Now.ToString(this.dtFormat),
-                    CurrentStatus = "Номер сектора не правильный"
+                    Status = WebAnswerT.TemporaryError,
+                    CurrentStatus = "Номер сектора не правильный",
+                    Now = DateTimeNow,
                 }, callback, HttpStatusCode.BadRequest);
             }
 
@@ -80,11 +84,9 @@ namespace RPS.CSR.Controllers {
             this.db.SaveChanges();
 
             return this.ToJsonp(new {
-                Result = new {
-                    Status = "Success",
-                    Now = DateTime.Now.ToString(this.dtFormat),
-                    CurrentStatus = "Операция выполнена успешно!"
-                }
+                Status = WebAnswerT.Succsess,
+                CurrentStatus = "Операция выполнена успешно!",
+                Now = DateTimeNow,
             }, callback);
         }
 
@@ -100,15 +102,17 @@ namespace RPS.CSR.Controllers {
 
             if (key.Length == 0 || !Utils.SectorValid(sector)) {
                 return this.ToJsonp(new {
-                    Status = "ArgumentError",
-                    Messages = "Sector or cardKey is invalid"
+                    Status = WebAnswerT.TemporaryError,
+                    CurrentStatus = "Sector or cardKey is invalid",
+                    Now = DateTimeNow,
                 }, callback, HttpStatusCode.BadRequest);
             }
 
             if (this.mifare.DeviceStatus != DeviceConnectionStatus.Connected) {
                 return this.ToJsonp(new {
-                    Status = "NotConnected",
-                    Message = "Device Not connected or invalid"
+                    Status = WebAnswerT.FatalError,
+                    CurrentStatus = "Device Not connected or invalid",
+                    Now = DateTimeNow,
                 }, callback);
             }
 
@@ -116,8 +120,9 @@ namespace RPS.CSR.Controllers {
             if (nuid == null || nuid.Length == 0) {
                 this.logger.LogInformation("Card not found");
                 return this.ToJsonp(new {
-                    Status = "SomeoneElsesCard",
-                    Message = "No card found"
+                    Status = WebAnswerT.TemporaryError,
+                    CurrentStatus = "No card found",
+                    Now = DateTimeNow,
                 }, callback);
             }
 
@@ -126,10 +131,10 @@ namespace RPS.CSR.Controllers {
             if (ret.Status == ReadStatus.Ok) {
                 var card = PhysicalCard.FromMifare(nuid, ret.Data);
                 return this.ToJsonp(new {
-                    Status = "CardReaded",
-                    CurrentStatus = "NotUsed",
-                    Message = "Card readed successfully",
-                    Now = DateTime.Now.ToString(this.dtFormat),
+                    Status = WebAnswerT.Succsess,
+                    CurrentStatus = "Карта прочитана!",
+                    Now = DateTimeNow,
+
                     CardId = BitConverter.ToString(nuid).Replace("-", ""),
                     ParkingEnterTime = card.ParkingEnterTime.ToString(this.dtFormat),
                     LastRecountTime = card.LastRecountTime.ToString(this.dtFormat),
@@ -144,13 +149,14 @@ namespace RPS.CSR.Controllers {
                     Nulltime3 = card.Nulltime3.ToString(this.dtFormat),
                     TVP = card.TVP.ToString(this.dtFormat),
                     TKVP = card.TKVP,
-                    Regular = false
+                    Regular = false,
                 }, callback);
             } else {
                 this.logger.LogWarning("Cannot read card: {st}", ret.Status);
                 return this.ToJsonp(new {
-                    Status = "SomeoneElsesCard",
-                    Message = $"Cannot read card: {ret.Status}"
+                    Status = WebAnswerT.TemporaryError,
+                    CurrentStatus = $"Cannot read card: {ret.Status}",
+                    Now = DateTimeNow,
                 }, callback);
             }
         }
@@ -183,15 +189,17 @@ namespace RPS.CSR.Controllers {
             var sector = SelectSectorNumber(querySector);
             if (key.Length == 0 || !Utils.SectorValid(sector)) {
                 return this.ToJsonp(new {
-                    Status = "ArgumentError",
-                    Messages = "Sector or cardKey is invalid"
+                    Status = WebAnswerT.TemporaryError,
+                    CurrentStatus = "Sector or cardKey is invalid",
+                    Now = DateTimeNow,
                 }, callback, HttpStatusCode.BadRequest);
             }
 
             if (this.mifare.DeviceStatus != DeviceConnectionStatus.Connected) {
                 return this.ToJsonp(new {
-                    Status = "NotConnected",
-                    Message = "Device Not connected or invalid"
+                    Status = WebAnswerT.FatalError,
+                    CurrentStatus = "Device Not connected or invalid",
+                    Now = DateTimeNow,
                 }, callback);
             }
 
@@ -199,8 +207,9 @@ namespace RPS.CSR.Controllers {
             if (nuid == null || nuid.Length == 0) {
                 this.logger.LogInformation("Card not found");
                 return this.ToJsonp(new {
-                    Status = "SomeoneElsesCard",
-                    Message = "No card found"
+                    Status = WebAnswerT.TemporaryError,
+                    CurrentStatus = "No card found",
+                    Now = DateTimeNow,
                 }, callback);
             }
 
@@ -208,8 +217,9 @@ namespace RPS.CSR.Controllers {
             if (!string.Equals(cardId, s_nuid, StringComparison.InvariantCultureIgnoreCase)) {
                 this.logger.LogInformation("Card id mismatch");
                 return this.ToJsonp(new {
-                    Status = "SomeoneElsesCard",
-                    Message = $"Card id mismatch: Required `{cardId}`, found `{s_nuid}`"
+                    Status = WebAnswerT.TemporaryError,
+                    CurrentStatus = $"Card id mismatch: Required `{cardId}`, found `{s_nuid}`",
+                    Now = DateTimeNow,
                 }, callback);
             }
 
@@ -235,15 +245,16 @@ namespace RPS.CSR.Controllers {
             var st = await this.mifare.WriteSectorAsync(nuid, sector, key, null, wr_data);
             if (st == WriteStatus.Ok) {
                 return this.ToJsonp(new {
-                    Status = "CardWrited",
-                    Now = DateTime.Now.ToString(this.dtFormat),
-                    Messages = "Card writed succesfully"
+                    Status = WebAnswerT.Ok,
+                    CurrentStatus = "Card writed succesfully",
+                    Now = DateTimeNow,
                 }, callback);
             } else {
                 this.logger.LogWarning("Cannot write card: {st}", st);
                 return this.ToJsonp(new {
-                    Status = "SomeoneElsesCard",
-                    Message = $"Cannot write card: {st}"
+                    Status = WebAnswerT.TemporaryError,
+                    CurrentStatus = $"Cannot write card: {st}",
+                    Now = DateTimeNow,
                 }, callback);
             }
         }
