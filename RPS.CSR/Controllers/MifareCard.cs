@@ -4,6 +4,7 @@ using RPS.CSR.CardManagement;
 using RPS.Devices;
 using RPS.Devices.Abstractions;
 using RPS.Devices.Mifare;
+using System.Globalization;
 
 namespace RPS.CSR.Controllers {
     [ApiController]
@@ -25,8 +26,16 @@ namespace RPS.CSR.Controllers {
         [HttpGet("GetVersion")]
         [HttpOptions("GetVersion")]
         public IActionResult GetVersion([FromQuery] string? callback = null) {
+            if (Request.Method == "OPTIONS") {
+                return Ok();
+            }
+
             return this.ToJsonp(new {
-                Status = WebAnswerT.Ok,
+                Result = new {
+                    Version = "3"
+                },
+                CurrentStatus = WebAnswerT.Succsess,
+                Status = WebAnswerT.Succsess,
                 Now = DateTimeNow,
             }, callback);
         }
@@ -34,13 +43,21 @@ namespace RPS.CSR.Controllers {
         [HttpGet("SetKey")]
         [HttpOptions("SetKey")]
         public IActionResult SetKey([FromQuery(Name = "key")] string cardKey, [FromQuery] string? callback = null) {
+            if (Request.Method == "OPTIONS") {
+                return Ok();
+            }
+
             var key = Utils.MifareKeyRepr(cardKey);
             if (key.Length == 0) {
                 return this.ToJsonp(new {
+                    Result = new {
+                        CurrentStatus = "Ошибка парсинга ключа"
+                    },
                     Status = WebAnswerT.TemporaryError,
-                    CurrentStatus = "key is invalid or invalid format",
+                    CurrentStatus = "Ошибка парсинга ключа",
                     Now = DateTimeNow,
-                }, callback, HttpStatusCode.BadRequest);
+                    IsAuthenticated = false,
+                }, callback);
             }
 
             var k = this.db.MifareSettings.OrderBy(r => r.Id).FirstOrDefault();
@@ -54,8 +71,11 @@ namespace RPS.CSR.Controllers {
             this.db.SaveChanges();
 
             return this.ToJsonp(new {
+                Result = new {
+                    CurrentStatus = "Операция выполнена успешно"
+                },
                 Status = WebAnswerT.Succsess,
-                CurrentStatus = "CardExists",
+                CurrentStatus = "Операция выполнена успешно",
                 Now = DateTimeNow,
                 IsAuthenticated = true,
             }, callback);
@@ -64,13 +84,20 @@ namespace RPS.CSR.Controllers {
         [HttpGet("SetSectorNumber")]
         [HttpOptions("SetSectorNumber")]
         public IActionResult SetSectorNumber([FromQuery(Name = "SectorNumber")] int sectorNumber, [FromQuery] string? callback = null) {
+            if (Request.Method == "OPTIONS") {
+                return Ok();
+            }
 
             if (!Utils.SectorValid(sectorNumber)) {
                 return this.ToJsonp(new {
+                    Result = new {
+                        CurrentStatus = "Номер сектора не верный"
+                    },
                     Status = WebAnswerT.TemporaryError,
-                    CurrentStatus = "Номер сектора не правильный",
+                    CurrentStatus = "Номер сектора не верный",
                     Now = DateTimeNow,
-                }, callback, HttpStatusCode.BadRequest);
+                    IsAuthenticated = false,
+                }, callback);
             }
 
             var k = this.db.MifareSettings.OrderBy(r => r.Id).FirstOrDefault();
@@ -84,9 +111,13 @@ namespace RPS.CSR.Controllers {
             this.db.SaveChanges();
 
             return this.ToJsonp(new {
+                Result = new {
+                    CurrentStatus = "Операция выполнена успешно"
+                },
                 Status = WebAnswerT.Succsess,
-                CurrentStatus = "Операция выполнена успешно!",
+                CurrentStatus = "Операция выполнена успешно",
                 Now = DateTimeNow,
+                IsAuthenticated = false,
             }, callback);
         }
 
@@ -97,21 +128,33 @@ namespace RPS.CSR.Controllers {
             [FromQuery] string? cardKey,
             [FromQuery] string? callback = null) {
 
+            if (Request.Method == "OPTIONS") {
+                return Ok();
+            }
+
             var key = SelectKey(cardKey);
             var sector = SelectSectorNumber(querySector);
 
             if (key.Length == 0 || !Utils.SectorValid(sector)) {
                 return this.ToJsonp(new {
-                    Status = WebAnswerT.TemporaryError,
-                    CurrentStatus = "Sector or cardKey is invalid",
+                    Result = new {
+                        CurrentStatus = "Неправильный ключ или сектор",
+                        ErrorMessage = "Неправильный ключ или сектор"
+                    },
+                    Status = WebAnswerT.SomeoneElsesCard,
+                    CurrentStatus = "Неправильный ключ или сектор",
                     Now = DateTimeNow,
-                }, callback, HttpStatusCode.BadRequest);
+                }, callback);
             }
 
             if (this.mifare.DeviceStatus != DeviceConnectionStatus.Connected) {
                 return this.ToJsonp(new {
-                    Status = WebAnswerT.FatalError,
-                    CurrentStatus = "Device Not connected or invalid",
+                    Result = new {
+                        CurrentStatus = "Ридер не подключен",
+                        ErrorMessage = "Ридер не подключен"
+                    },
+                    Status = WebAnswerT.ReaderNotExists,
+                    CurrentStatus = "Ридер не подключен",
                     Now = DateTimeNow,
                 }, callback);
             }
@@ -120,8 +163,12 @@ namespace RPS.CSR.Controllers {
             if (nuid == null || nuid.Length == 0) {
                 this.logger.LogInformation("Card not found");
                 return this.ToJsonp(new {
-                    Status = WebAnswerT.TemporaryError,
-                    CurrentStatus = "No card found",
+                    Result = new {
+                        CurrentStatus = "Отсутствует карта!",
+                        ErrorMessage = "Отсутствует карта!"
+                    },
+                    CurrentStatus = "Отсутствует карта!",
+                    Status = WebAnswerT.CardNotExists,
                     Now = DateTimeNow,
                 }, callback);
             }
@@ -131,31 +178,39 @@ namespace RPS.CSR.Controllers {
             if (ret.Status == ReadStatus.Ok) {
                 var card = PhysicalCard.FromMifare(nuid, ret.Data);
                 return this.ToJsonp(new {
-                    Status = WebAnswerT.Succsess,
-                    CurrentStatus = "Карта прочитана!",
-                    Now = DateTimeNow,
+                    Result = new {
+                        Status = "Операция выполнена успешно!", // WebAnswerT.Succsess,
 
-                    CardId = BitConverter.ToString(nuid).Replace("-", ""),
-                    ParkingEnterTime = card.ParkingEnterTime.ToString(this.dtFormat),
-                    LastRecountTime = card.LastRecountTime.ToString(this.dtFormat),
-                    SumOnCard = card.SumOnCard,
-                    TSidFC = card.TSidFC,
-                    TPidFC = card.TPidFC,
-                    ZoneidFC = card.ZoneidFC,
-                    ClientGroupidFC = card.ClientGroupidFC,
-                    LastPaymentTime = card.LastPaymentTime.ToString(this.dtFormat),
-                    Nulltime1 = card.Nulltime1.ToString(this.dtFormat),
-                    Nulltime2 = card.Nulltime2.ToString(this.dtFormat),
-                    Nulltime3 = card.Nulltime3.ToString(this.dtFormat),
-                    TVP = card.TVP.ToString(this.dtFormat),
-                    TKVP = card.TKVP,
-                    Regular = false,
+                        CardId = ulong.Parse(BitConverter.ToString(nuid).Replace("-", ""), NumberStyles.HexNumber),
+                        ParkingEnterTime = card.ParkingEnterTime.ToString(this.dtFormat),
+                        LastRecountTime = card.LastRecountTime.ToString(this.dtFormat),
+                        SumOnCard = card.SumOnCard,
+                        TSidFC = card.TSidFC,
+                        TPidFC = card.TPidFC,
+                        ZoneidFC = card.ZoneidFC,
+                        ClientGroupidFC = card.ClientGroupidFC,
+                        LastPaymentTime = card.LastPaymentTime.ToString(this.dtFormat),
+                        Nulltime1 = card.Nulltime1.ToString(this.dtFormat),
+                        Nulltime2 = card.Nulltime2.ToString(this.dtFormat),
+                        Nulltime3 = card.Nulltime3.ToString(this.dtFormat),
+                        TVP = card.TVP.ToString(this.dtFormat),
+                        TKVP = card.TKVP,
+                        ClientTypidFC = card.ClientTypidFC,
+                        //Regular = false,
+                    },
+                    CurrentStatus = "Карта прочитана!",
+                    Status = WebAnswerT.CardReaded,
+                    Now = DateTimeNow,
                 }, callback);
             } else {
                 this.logger.LogWarning("Cannot read card: {st}", ret.Status);
                 return this.ToJsonp(new {
-                    Status = WebAnswerT.TemporaryError,
-                    CurrentStatus = $"Cannot read card: {ret.Status}",
+                    Result = new {
+                        CurrentStatus = $"Ошибка чтения карты: `{ret.Status}`",
+                        ErrorMessage = $"Ошибка чтения карты: `{ret.Status}`"
+                    },
+                    Status = WebAnswerT.Exception,
+                    CurrentStatus = $"Ошибка чтения карты: `{ret.Status}`",
                     Now = DateTimeNow,
                 }, callback);
             }
@@ -179,26 +234,38 @@ namespace RPS.CSR.Controllers {
             [FromQuery] DateTime tVP,
             [FromQuery] int clientTypidFC,
             [FromQuery] int tKVP,
-            [FromQuery] string cardId,
+            [FromQuery] ulong cardId,
             [FromQuery] DateTime? dateSaveCard,
             [FromQuery(Name = "sector")] int? querySector,
             [FromQuery] string? cardKey,
             [FromQuery] string? callback = null) {
 
+            if (Request.Method == "OPTIONS") {
+                return Ok();
+            }
+
             var key = SelectKey(cardKey);
             var sector = SelectSectorNumber(querySector);
             if (key.Length == 0 || !Utils.SectorValid(sector)) {
                 return this.ToJsonp(new {
-                    Status = WebAnswerT.TemporaryError,
-                    CurrentStatus = "Sector or cardKey is invalid",
+                    Result = new {
+                        CurrentStatus = "Неправильный ключ или сектор",
+                        ErrorMessage = "Неправильный ключ или сектор"
+                    },
+                    Status = WebAnswerT.SomeoneElsesCard,
+                    CurrentStatus = "Неправильный ключ или сектор",
                     Now = DateTimeNow,
-                }, callback, HttpStatusCode.BadRequest);
+                }, callback);
             }
 
             if (this.mifare.DeviceStatus != DeviceConnectionStatus.Connected) {
                 return this.ToJsonp(new {
-                    Status = WebAnswerT.FatalError,
-                    CurrentStatus = "Device Not connected or invalid",
+                    Result = new {
+                        CurrentStatus = "Ридер не подключен",
+                        ErrorMessage = "Ридер не подключен"
+                    },
+                    Status = WebAnswerT.ReaderNotExists,
+                    CurrentStatus = "Ридер не подключен",
                     Now = DateTimeNow,
                 }, callback);
             }
@@ -207,18 +274,26 @@ namespace RPS.CSR.Controllers {
             if (nuid == null || nuid.Length == 0) {
                 this.logger.LogInformation("Card not found");
                 return this.ToJsonp(new {
-                    Status = WebAnswerT.TemporaryError,
-                    CurrentStatus = "No card found",
+                    Result = new {
+                        CurrentStatus = "Отсутствует карта!",
+                        ErrorMessage = "Отсутствует карта!"
+                    },
+                    CurrentStatus = "Отсутствует карта!",
+                    Status = WebAnswerT.CardNotExists,
                     Now = DateTimeNow,
                 }, callback);
             }
 
-            var s_nuid = BitConverter.ToString(nuid).Replace("-", "").ToUpper();
-            if (!string.Equals(cardId, s_nuid, StringComparison.InvariantCultureIgnoreCase)) {
+            var l_nuid = ulong.Parse(BitConverter.ToString(nuid).Replace("-", ""), NumberStyles.HexNumber);// BitConverter.ToString(nuid).Replace("-", "").ToUpper();
+            if (l_nuid != cardId) {
                 this.logger.LogInformation("Card id mismatch");
                 return this.ToJsonp(new {
+                    Result = new {
+                        CurrentStatus = $"Не совпадает номер карты: запрошен `{cardId}`, найден `{l_nuid}`",
+                        ErrorMessage = $"Не совпадает номер карты: запрошен `{cardId}`, найден `{l_nuid}`"
+                    },
                     Status = WebAnswerT.TemporaryError,
-                    CurrentStatus = $"Card id mismatch: Required `{cardId}`, found `{s_nuid}`",
+                    CurrentStatus = $"Card id mismatch: Required `{cardId}`, found `{l_nuid}`",
                     Now = DateTimeNow,
                 }, callback);
             }
@@ -243,18 +318,43 @@ namespace RPS.CSR.Controllers {
 
             var wr_data = card.ToMifare();
             var st = await this.mifare.WriteSectorAsync(nuid, sector, key, null, wr_data);
+            var s_now = DateTimeNow;
             if (st == WriteStatus.Ok) {
                 return this.ToJsonp(new {
-                    Status = WebAnswerT.Ok,
-                    CurrentStatus = "Card writed succesfully",
-                    Now = DateTimeNow,
+                    Result = new {
+                        Status = "Операция выполнена успешно!",
+                        CardId = cardId,
+                        ParkingEnterTime = card.ParkingEnterTime.ToString(this.dtFormat),
+                        LastRecountTime = card.LastRecountTime.ToString(this.dtFormat),
+                        TSidFC = card.TSidFC,
+                        TPidFC = card.TPidFC,
+                        ZoneidFC = card.ZoneidFC,
+                        ClientGroupidFC = card.ClientGroupidFC,
+
+                        SumOnCard = card.SumOnCard,
+                        LastPaymentTime = card.LastPaymentTime.ToString(this.dtFormat),
+                        Nulltime1 = card.Nulltime1.ToString(this.dtFormat),
+                        Nulltime2 = card.Nulltime2.ToString(this.dtFormat),
+                        Nulltime3 = card.Nulltime3.ToString(this.dtFormat),
+                        DateSaveCard = s_now,
+                        TVP = card.TVP.ToString(this.dtFormat),
+                        TKVP = card.TKVP,
+                        ClientTypidFC = card.ClientTypidFC,
+                    },
+                    Status = WebAnswerT.CardWrited,
+                    CurrentStatus = "Карта записана успешно!",
+                    Now = s_now,
                 }, callback);
             } else {
                 this.logger.LogWarning("Cannot write card: {st}", st);
                 return this.ToJsonp(new {
-                    Status = WebAnswerT.TemporaryError,
-                    CurrentStatus = $"Cannot write card: {st}",
-                    Now = DateTimeNow,
+                    Result = new {
+                        CurrentStatus = $"Ошибка записи карты: `{st}`",
+                        ErrorMessage = $"Ошибка записи карты: `{st}`"
+                    },
+                    Status = WebAnswerT.Exception,
+                    CurrentStatus = $"Ошибка записи карты: `{st}`",
+                    Now = s_now,
                 }, callback);
             }
         }

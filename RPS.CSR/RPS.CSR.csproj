@@ -7,8 +7,11 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <PublishSingleFile Condition="'$(Configuration)' == 'Release'">false</PublishSingleFile>
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
-    <Version>1.7</Version>
+    <Version>1.8</Version>
     <PackageReleaseNotes>
+      Version 1.8
+        - Rewrite in the office and check in real client site
+        - Simplified API endpoints
       Version 1.7
         - Rewrite responses as old HID service
       Version 1.6

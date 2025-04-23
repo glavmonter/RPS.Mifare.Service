@@ -6,9 +6,9 @@ using System.Net;
 namespace RPS.CSR.Controllers {
 
     public class SerialPortConfig {
-        public string SerialPortName { get; set; } = String.Empty;
+        public string Name { get; set; } = String.Empty;
 
-        public int SerialPortSpeed { get; set; }
+        public int Speed { get; set; }
     }
 
     public class AvailablePort {
@@ -19,19 +19,24 @@ namespace RPS.CSR.Controllers {
 
     [ApiController]
     [Route("/[controller]")]
-    public class SerialSettingsController : ControllerBase {
-        private readonly ILogger<SerialSettingsController> logger;
+    public class ComSettingsController : ControllerBase {
+        private readonly ILogger<ComSettingsController> logger;
         private readonly ApplicationDbContext db;
         private readonly ConcurrentQueue<object> requestQueue;
 
-        public SerialSettingsController(ApplicationDbContext db, ConcurrentQueue<object> requestQueue, ILogger<SerialSettingsController> logger) {
+        public ComSettingsController(ApplicationDbContext db, ConcurrentQueue<object> requestQueue, ILogger<ComSettingsController> logger) {
             this.logger = logger;
             this.db = db;
             this.requestQueue = requestQueue;
         }
 
-        [HttpGet("GetSerialSettings")]
+        [HttpGet("Get")]
+        [HttpOptions("Get")]
         public IActionResult GetSerialSettings([FromQuery] string? callback = null) {
+            if (Request.Method == "OPTIONS") {
+                return Ok();
+            }
+
             var s = this.db.Settings.OrderBy(r => r.Id).FirstOrDefault();
             if (s == null) {
                 return this.ToJsonp(new {
@@ -46,9 +51,14 @@ namespace RPS.CSR.Controllers {
             }, callback);
         }
 
-        [HttpPost("SetSerialSettings")]
-        public IActionResult SetSerialSettings([FromBody] SerialPortConfig config, [FromQuery] string? callback = null) {
-            if (string.IsNullOrEmpty(config.SerialPortName)) {
+        [HttpGet("Set")]
+        [HttpOptions("Set")]
+        public IActionResult SetSerialSettings([FromQuery] SerialPortConfig config, [FromQuery] string? callback = null) {
+            if (Request.Method == "OPTIONS") {
+                return Ok();
+            }
+
+            if (string.IsNullOrEmpty(config.Name)) {
                 return this.ToJsonp(new {
                     Status = "Error",
                     ErrorMessage = "Invalid argument"
@@ -58,14 +68,14 @@ namespace RPS.CSR.Controllers {
             var s = this.db.Settings.OrderBy(r => r.Id).FirstOrDefault();
             if (s == null) {
                 s = new Models.Settings {
-                    SerialPortName = config.SerialPortName,
-                    SerialPortSpeed = config.SerialPortSpeed
+                    SerialPortName = config.Name,
+                    SerialPortSpeed = config.Speed
                 };
 
                 this.db.Add(s);
             } else {
-                s.SerialPortName = config.SerialPortName;
-                s.SerialPortSpeed = config.SerialPortSpeed;
+                s.SerialPortName = config.Name;
+                s.SerialPortSpeed = config.Speed;
             }
 
             this.db.SaveChanges();
@@ -78,7 +88,12 @@ namespace RPS.CSR.Controllers {
         }
 
         [HttpGet("AvailablePorts")]
+        [HttpOptions("AvailablePorts")]
         public IActionResult GetAvailablePorts([FromQuery] string? callback = null) {
+            if (Request.Method == "OPTIONS") {
+                return Ok();
+            }
+
             var names = Utils.SerialPorts;
             IList<AvailablePort> ports = new List<AvailablePort>();
             foreach (var p in names) {

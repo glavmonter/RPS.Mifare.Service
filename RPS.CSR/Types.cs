@@ -8,6 +8,12 @@ namespace RPS.CSR {
         Succsess,
         TemporaryError,
         FatalError,
+        CardReaded,
+        CardNotExists,
+        SomeoneElsesCard,
+        ReaderNotExists,
+        Exception,
+        CardWrited,
         Ok
     }
 }
