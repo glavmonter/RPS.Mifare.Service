@@ -7,8 +7,11 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <PublishSingleFile Condition="'$(Configuration)' == 'Release'">false</PublishSingleFile>
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
-    <Version>1.8</Version>
+    <Version>1.9</Version>
     <PackageReleaseNotes>
+      Version 1.9
+        - Add EF core migration
+        - Return all JSON fields as string
       Version 1.8
         - Rewrite in the office and check in real client site
         - Simplified API endpoints
