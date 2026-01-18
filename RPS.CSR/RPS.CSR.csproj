@@ -7,8 +7,11 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <PublishSingleFile Condition="'$(Configuration)' == 'Release'">false</PublishSingleFile>
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
-    <Version>1.8</Version>
+    <Version>1.9</Version>
     <PackageReleaseNotes>
+      Version 1.9
+        - Add EF core migration
+        - Return all JSON fields as string
       Version 1.8
         - Rewrite in the office and check in real client site
         - Simplified API endpoints
@@ -35,7 +38,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="7.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
     <PackageReference Include="NLog.Web.AspNetCore" Version="5.3.11" />
       
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
@@ -43,7 +50,7 @@
     <PackageReference Include="RPS.Devices.Mifare" Version="1.0.2" />
     <PackageReference Include="RPS.Devices.SerialConnection" Version="1.2.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">

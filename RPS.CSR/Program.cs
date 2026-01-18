@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Reflection;
+﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using NLog.Web;
 using RPS.ConfigurationLoader;
@@ -7,6 +6,8 @@ using RPS.CSR;
 using RPS.Devices.Abstractions;
 using RPS.Devices.Mifare.Prox;
 using RPS.Devices.SerialConnection;
+using System.Collections.Concurrent;
+using System.Reflection;
 
 string appName = Assembly.GetExecutingAssembly().GetName().Name!;
 
@@ -50,8 +51,35 @@ builder.Host.UseWindowsService();
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope()) {
-    var db = scope.ServiceProvider.GetService<ApplicationDbContext>();
-    db?.Database.EnsureCreated();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var conn = db.Database.GetDbConnection();
+    await conn.OpenAsync();
+
+    await using (var walCmd = conn.CreateCommand()) {
+        walCmd.CommandText = "PRAGMA journal_mode=WAL;";
+        await walCmd.ExecuteNonQueryAsync();
+    }
+
+    await using var cmd = conn.CreateCommand();
+    cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='__EFMigrationsHistory'";
+    var historyExists = await cmd.ExecuteScalarAsync() != null;
+   
+    await using var tablesCmd = conn.CreateCommand();
+    tablesCmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'";
+    var hasExistingTables = await tablesCmd.ExecuteScalarAsync() != null;
+
+    if (!historyExists && hasExistingTables) {
+        await db.Database.ExecuteSqlRawAsync("""
+                                                 CREATE TABLE "__EFMigrationsHistory" (
+                                                     "MigrationId" TEXT NOT NULL PRIMARY KEY,
+                                                     "ProductVersion" TEXT NOT NULL
+                                                 );
+                                                 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+                                                 VALUES ('20260116112201_InitialCreate', '9.0.0');
+                                             """);
+    }
+
+    await db.Database.MigrateAsync();
 }
 
 bool useSwagger = app.Configuration.GetValue<bool>("UseSwagger", false);
