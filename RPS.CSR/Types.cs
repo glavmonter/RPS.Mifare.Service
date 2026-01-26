@@ -6,6 +6,7 @@ namespace RPS.CSR {
     public enum WebAnswerT {
         Undefined,
         Succsess,
+        Success,
         TemporaryError,
         FatalError,
         CardReaded,

@@ -74,7 +74,7 @@ namespace RPS.CSR.Controllers {
                 Result = new {
                     CurrentStatus = "Операция выполнена успешно"
                 },
-                Status = WebAnswerT.Succsess,
+                Status = WebAnswerT.Success,
                 CurrentStatus = "Операция выполнена успешно",
                 Now = DateTimeNow,
                 IsAuthenticated = true,
